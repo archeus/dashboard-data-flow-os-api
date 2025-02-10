@@ -86,7 +86,8 @@ export async function getWebVitalsMetrics(
   continentCode?: string,
   countryCode?: string,
   browserName?: string,
-  ispName?: string
+  ispName?: string,
+  deviceType?: string
 ): Promise<WebVitalsMetrics> {
   // Set default time range to last 24 hours if not provided
   const now = new Date();
@@ -165,7 +166,24 @@ export async function getWebVitalsMetrics(
     });
   }
 
-  console.log('mustClauses', JSON.stringify(mustClauses, null, 2));
+  if (deviceType === 'mobile') {
+    mustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    mustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
+    });
+  }
+
   const metrics = ['FCP', 'TTFB', 'LCP', 'INP', 'CLS'];
   const response = await client.search({
     index: 'analytics_v4_*',
@@ -213,7 +231,6 @@ export async function getWebVitalsMetrics(
     CLS: { name: 'Cumulative Layout Shift', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
   };
 
-  console.log('response', JSON.stringify(response.body, null, 2));
   metrics.forEach((metric) => {
     const agg = response.body.aggregations[metric];
     if (!agg?.buckets) {
@@ -239,7 +256,8 @@ export async function getWebVitalsP75Metrics(
   continentCode?: string,
   countryCode?: string,
   browserName?: string,
-  ispName?: string
+  ispName?: string,
+  deviceType?: string
 ): Promise<WebVitalsP75Metrics> {
   const now = new Date();
   const actualEndTime = endTime ? parseISO(endTime) : now;
@@ -269,6 +287,24 @@ export async function getWebVitalsP75Metrics(
   if (countryCode) mustClauses.push({ term: { 'geoip.countryCode.keyword': countryCode } });
   if (browserName) mustClauses.push({ term: { 'user_agent.browser.name.keyword': browserName } });
   if (ispName) mustClauses.push({ term: { 'geoip.ispName.keyword': ispName } });
+
+  if (deviceType === 'mobile') {
+    mustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    mustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
+    });
+  }
 
   const metrics = ['FCP', 'TTFB', 'LCP', 'INP', 'CLS'];
   const response = await client.search({
@@ -351,7 +387,8 @@ export async function getPlayerOverallMetrics(
   continentCode?: string,
   countryCode?: string,
   browserName?: string,
-  ispName?: string
+  ispName?: string,
+  deviceType?: string
 ): Promise<OverallMetricsResponse> {
   // Set default time range to last 24 hours if not provided
   const now = new Date();
@@ -419,6 +456,24 @@ export async function getPlayerOverallMetrics(
       term: {
         'geoip.ispName.keyword': ispName,
       },
+    });
+  }
+
+  if (deviceType === 'mobile') {
+    baseMustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    baseMustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
     });
   }
 
@@ -539,7 +594,8 @@ export async function getPlayerQoEMetrics(
   continentCode?: string,
   countryCode?: string,
   browserName?: string,
-  ispName?: string
+  ispName?: string,
+  deviceType?: string
 ): Promise<QoEMetricsResult> {
   // Set default time range to last 24 hours if not provided
   const now = new Date();
@@ -629,6 +685,24 @@ export async function getPlayerQoEMetrics(
     });
   }
 
+  if (deviceType === 'mobile') {
+    mustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    mustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
+    });
+  }
+
   const response = await client.search({
     index: 'analytics_v4_*',
     body: {
@@ -690,7 +764,8 @@ export async function getCountryQoEMetrics(
   guestUser?: boolean,
   continentCode?: string,
   browserName?: string,
-  ispName?: string
+  ispName?: string,
+  deviceType?: string
 ): Promise<CountryQoEMetric[]> {
   // Set default time range to last 24 hours if not provided
   const now = new Date();
@@ -758,6 +833,24 @@ export async function getCountryQoEMetrics(
       term: {
         'geoip.ispName.keyword': ispName,
       },
+    });
+  }
+
+  if (deviceType === 'mobile') {
+    mustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    mustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
     });
   }
 
@@ -835,18 +928,18 @@ export async function getCountryQoEMetrics(
   });
 }
 
-export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<number> {
+async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<number> {
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-        bool: {
-          must_not: {
-            exists: {
-              field: 'user_agent.device.type.keyword'
-            }
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
           }
         }
-      };
+      }
+    };
 
   const response = await client.search({
     index: 'analytics_v4_*',
@@ -974,3 +1067,6 @@ export async function getWebVitalsHistogram(
     }))
   };
 }
+
+
+export { getDeviceTypeCount }
