@@ -64,7 +64,7 @@ export async function getAutocompleteResults(
               wildcard: {
                 [field]: {
                   value: `${prefix}*`,
-                  case_insensitive: false
+                  case_insensitive: true
                 }
               },
             },
@@ -227,35 +227,35 @@ export async function getPlayerOverallMetrics(
     }),
     // Logged-in metrics
     client.search({
-    index: 'analytics_v4_*',
-    body: {
-      size: 0,
-      query: {
-        bool: {
-          must: [
-            ...baseMustClauses,
-            {
-              term: {
-                guestUser: false,
+      index: 'analytics_v4_*',
+      body: {
+        size: 0,
+        query: {
+          bool: {
+            must: [
+              ...baseMustClauses,
+              {
+                term: {
+                  guestUser: false,
+                },
               },
+            ],
+          },
+        },
+        aggs: {
+          total_playtime: {
+            sum: {
+              field: 'payload_player_playtime',
             },
-          ],
-        },
-      },
-      aggs: {
-        total_playtime: {
-          sum: {
-            field: 'payload_player_playtime',
           },
-        },
-        total_buffering: {
-          sum: {
-            field: 'payload_player_bufferingTime',
+          total_buffering: {
+            sum: {
+              field: 'payload_player_bufferingTime',
+            },
           },
         },
       },
-    },
-  }),
+    }),
   ]);
 
   function calculateMetrics(response: any): OverallMetrics {
@@ -292,10 +292,10 @@ export async function getPlayerQoEMetrics(
   const now = new Date();
   const actualEndTime = endTime ? parseISO(endTime) : now;
   const actualStartTime = startTime ? parseISO(startTime) : subDays(now, 1);
-  
+
   // Calculate time range in days
   const daysDifference = differenceInDays(actualEndTime, actualStartTime);
-  
+
   // Adjust bucket size based on time range
   let actualInterval = interval;
   if (daysDifference > 7) {
@@ -414,7 +414,7 @@ export async function getPlayerQoEMetrics(
     const playtime = bucket.total_playtime.value;
     const bufferingTime = bucket.total_buffering.value;
     const totalTime = playtime + bufferingTime;
-    
+
     return {
       timestamp: bucket.key_as_string,
       playtime: playtime,
