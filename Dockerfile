@@ -26,6 +26,9 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --production
 
+# Install tsx for running TypeScript files
+RUN npm install -g tsx
+
 # Copy built assets from builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
@@ -34,4 +37,4 @@ COPY --from=builder /app/src/server ./src/server
 EXPOSE 3000
 
 # Start the server
-CMD ["npm", "run", "dev:server"]
+CMD ["tsx", "src/server/index.ts"]
