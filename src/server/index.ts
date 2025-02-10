@@ -16,6 +16,9 @@ app.use(cors());
 // Enable gzip compression
 app.use(compression());
 
+// Create router for API v4 endpoints
+const apiV4Router = express.Router();
+
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
@@ -44,7 +47,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Autocomplete endpoints
-app.get('/autocomplete/continent', async (req, res) => {
+apiV4Router.get('/autocomplete/continent', async (req, res) => {
   try {
     const { q, size } = req.query;
     const results = await getAutocompleteResults(
@@ -62,7 +65,7 @@ app.get('/autocomplete/continent', async (req, res) => {
   }
 });
 
-app.get('/autocomplete/country', async (req, res) => {
+apiV4Router.get('/autocomplete/country', async (req, res) => {
   try {
     const { q, size } = req.query;
     const results = await getAutocompleteResults(
@@ -80,7 +83,7 @@ app.get('/autocomplete/country', async (req, res) => {
   }
 });
 
-app.get('/autocomplete/isp', async (req, res) => {
+apiV4Router.get('/autocomplete/isp', async (req, res) => {
   try {
     const { q, size } = req.query;
     const results = await getAutocompleteResults(
@@ -98,7 +101,7 @@ app.get('/autocomplete/isp', async (req, res) => {
   }
 });
 
-app.get('/autocomplete/room', async (req, res) => {
+apiV4Router.get('/autocomplete/room', async (req, res) => {
   try {
     const { q, size } = req.query;
     const results = await getAutocompleteResults(
@@ -116,7 +119,7 @@ app.get('/autocomplete/room', async (req, res) => {
   }
 });
 
-app.get('/autocomplete/browser', async (req, res) => {
+apiV4Router.get('/autocomplete/browser', async (req, res) => {
   try {
     const { q, size } = req.query;
     const results = await getAutocompleteResults(
@@ -134,7 +137,7 @@ app.get('/autocomplete/browser', async (req, res) => {
   }
 });
 
-app.get('/agg/player/QoE', async (req, res) => {
+apiV4Router.get('/agg/player/QoE', async (req, res) => {
   try {
     const {
       startTime,
@@ -176,7 +179,7 @@ app.get('/agg/player/QoE', async (req, res) => {
   }
 });
 
-app.get('/agg/player/overall', async (req, res) => {
+apiV4Router.get('/agg/player/overall', async (req, res) => {
   try {
     const {
       startTime,
@@ -215,7 +218,7 @@ app.get('/agg/player/overall', async (req, res) => {
   }
 });
 
-app.get('/agg/player/country', async (req, res) => {
+apiV4Router.get('/agg/player/country', async (req, res) => {
   try {
     const {
       startTime,
@@ -251,6 +254,9 @@ app.get('/agg/player/country', async (req, res) => {
     });
   }
 });
+
+// Mount the v4 API router
+app.use('/api/v4', apiV4Router);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
