@@ -47,6 +47,259 @@ export interface CountryQoEMetric {
   uniqueUsers: number;
 }
 
+export interface WebVitalsMetric {
+  name: string;
+  ratings: {
+    good: number;
+    'needs-improvement': number;
+    poor: number;
+  };
+}
+
+export interface WebVitalsP75Metric {
+  name: string;
+  p75: number;
+}
+
+export interface WebVitalsMetrics {
+  FCP: WebVitalsMetric;
+  TTFB: WebVitalsMetric;
+  LCP: WebVitalsMetric;
+  INP: WebVitalsMetric;
+  CLS: WebVitalsMetric;
+}
+
+export interface WebVitalsP75Metrics {
+  FCP: WebVitalsP75Metric;
+  TTFB: WebVitalsP75Metric;
+  LCP: WebVitalsP75Metric;
+  INP: WebVitalsP75Metric;
+  CLS: WebVitalsP75Metric;
+}
+
+export async function getWebVitalsMetrics(
+  startTime?: string,
+  endTime?: string,
+  room?: string,
+  sessionId?: string,
+  guestUser?: boolean,
+  continentCode?: string,
+  countryCode?: string,
+  browserName?: string,
+  ispName?: string
+): Promise<WebVitalsMetrics> {
+  // Set default time range to last 24 hours if not provided
+  const now = new Date();
+  const actualEndTime = endTime ? parseISO(endTime) : now;
+  const actualStartTime = startTime ? parseISO(startTime) : subDays(now, 1);
+
+  const mustClauses = [
+    {
+      range: {
+        '@timestamp': {
+          gte: actualStartTime.toISOString(),
+          lte: actualEndTime.toISOString(),
+        },
+      },
+    },
+    {
+      term: {
+        event: 'web_vitals',
+      },
+    },
+  ];
+
+  if (room) {
+    mustClauses.push({
+      term: {
+        'room.keyword': room,
+      },
+    });
+  }
+
+  if (sessionId) {
+    mustClauses.push({
+      term: {
+        'sessionId.keyword': sessionId,
+      },
+    });
+  }
+
+  if (guestUser !== undefined) {
+    mustClauses.push({
+      term: {
+        guestUser: guestUser,
+      },
+    });
+  }
+
+  if (continentCode) {
+    mustClauses.push({
+      term: {
+        'geoip.continentCode.keyword': continentCode,
+      },
+    });
+  }
+
+  if (countryCode) {
+    mustClauses.push({
+      term: {
+        'geoip.countryCode.keyword': countryCode,
+      },
+    });
+  }
+
+  if (browserName) {
+    mustClauses.push({
+      term: {
+        'user_agent.browser.name.keyword': browserName,
+      },
+    });
+  }
+
+  if (ispName) {
+    mustClauses.push({
+      term: {
+        'geoip.ispName.keyword': ispName,
+      },
+    });
+  }
+
+  console.log('mustClauses', JSON.stringify(mustClauses, null, 2));
+  const metrics = ['FCP', 'TTFB', 'LCP', 'INP', 'CLS'];
+  const response = await client.search({
+    index: 'analytics_v4_*',
+    body: {
+      size: 0,
+      query: {
+        bool: {
+          must: mustClauses,
+        },
+      },
+      aggs: Object.fromEntries(
+        metrics.map((metric) => [
+          metric,
+          {
+            filters: {
+              filters: {
+                good: {
+                  term: {
+                    [`payload_web_vitals_${metric}_rating.keyword`]: 'good'
+                  }
+                },
+                'needs-improvement': {
+                  term: {
+                    [`payload_web_vitals_${metric}_rating.keyword`]: 'needs-improvement'
+                  }
+                },
+                poor: {
+                  term: {
+                    [`payload_web_vitals_${metric}_rating.keyword`]: 'poor'
+                  }
+                }
+              }
+            }
+          }
+        ])
+      )
+    },
+  });
+
+  const result: WebVitalsMetrics = {
+    FCP: { name: 'First Contentful Paint', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
+    TTFB: { name: 'Time to First Byte', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
+    LCP: { name: 'Largest Contentful Paint', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
+    INP: { name: 'Interaction to Next Paint', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
+    CLS: { name: 'Cumulative Layout Shift', ratings: { good: 0, 'needs-improvement': 0, poor: 0 } },
+  };
+
+  console.log('response', JSON.stringify(response.body, null, 2));
+  metrics.forEach((metric) => {
+    const agg = response.body.aggregations[metric];
+    if (!agg?.buckets) {
+      return;
+    }
+
+    result[metric as keyof WebVitalsMetrics].ratings = {
+      good: agg.buckets.good.doc_count,
+      'needs-improvement': agg.buckets['needs-improvement'].doc_count,
+      poor: agg.buckets.poor.doc_count,
+    };
+  });
+
+  return result;
+}
+
+export async function getWebVitalsP75Metrics(
+  startTime?: string,
+  endTime?: string,
+  room?: string,
+  sessionId?: string,
+  guestUser?: boolean,
+  continentCode?: string,
+  countryCode?: string,
+  browserName?: string,
+  ispName?: string
+): Promise<WebVitalsP75Metrics> {
+  const now = new Date();
+  const actualEndTime = endTime ? parseISO(endTime) : now;
+  const actualStartTime = startTime ? parseISO(startTime) : subDays(now, 1);
+
+  const mustClauses = [
+    {
+      range: {
+        '@timestamp': {
+          gte: actualStartTime.toISOString(),
+          lte: actualEndTime.toISOString(),
+        },
+      },
+    },
+    {
+      term: {
+        event: 'web_vitals',
+      },
+    },
+  ];
+
+  // Add all the filter conditions
+  if (room) mustClauses.push({ term: { 'room.keyword': room } });
+  if (sessionId) mustClauses.push({ term: { 'sessionId.keyword': sessionId } });
+  if (guestUser !== undefined) mustClauses.push({ term: { guestUser } });
+  if (continentCode) mustClauses.push({ term: { 'geoip.continentCode.keyword': continentCode } });
+  if (countryCode) mustClauses.push({ term: { 'geoip.countryCode.keyword': countryCode } });
+  if (browserName) mustClauses.push({ term: { 'user_agent.browser.name.keyword': browserName } });
+  if (ispName) mustClauses.push({ term: { 'geoip.ispName.keyword': ispName } });
+
+  const metrics = ['FCP', 'TTFB', 'LCP', 'INP', 'CLS'];
+  const response = await client.search({
+    index: 'analytics_v4_*',
+    body: {
+      size: 0,
+      query: { bool: { must: mustClauses } },
+      aggs: Object.fromEntries(
+        metrics.map((metric) => [
+          metric,
+          {
+            percentiles: {
+              field: `payload_web_vitals_${metric}_value`,
+              percents: [75],
+            },
+          },
+        ])
+      ),
+    },
+  });
+
+  const result: WebVitalsP75Metrics = {
+    FCP: { name: 'First Contentful Paint', p75: response.body.aggregations.FCP?.values?.['75.0'] || 0 },
+    TTFB: { name: 'Time to First Byte', p75: response.body.aggregations.TTFB?.values?.['75.0'] || 0 },
+    LCP: { name: 'Largest Contentful Paint', p75: response.body.aggregations.LCP?.values?.['75.0'] || 0 },
+    INP: { name: 'Interaction to Next Paint', p75: response.body.aggregations.INP?.values?.['75.0'] || 0 },
+    CLS: { name: 'Cumulative Layout Shift', p75: response.body.aggregations.CLS?.values?.['75.0'] || 0 },
+  };
+
+  return result;
+}
 export async function getAutocompleteResults(
   field: string,
   prefix: string = '',
@@ -580,4 +833,144 @@ export async function getCountryQoEMetrics(
       uniqueUsers: bucket.unique_users.value,
     };
   });
+}
+
+export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<number> {
+  const query = type === 'mobile'
+    ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
+    : {
+        bool: {
+          must_not: {
+            exists: {
+              field: 'user_agent.device.type.keyword'
+            }
+          }
+        }
+      };
+
+  const response = await client.search({
+    index: 'analytics_v4_*',
+    body: {
+      size: 0,
+      query: {
+        bool: {
+          must: [
+            { term: { event: 'player' } },
+            query
+          ]
+        }
+      }
+    }
+  });
+
+  return response.body.hits.total.value;
+}
+
+export async function getWebVitalsHistogram(
+  metric: 'FCP' | 'TTFB' | 'LCP' | 'INP' | 'CLS',
+  startTime?: string,
+  endTime?: string,
+  interval: string = '1m',
+  room?: string,
+  sessionId?: string,
+  guestUser?: boolean,
+  continentCode?: string,
+  countryCode?: string,
+  browserName?: string,
+  ispName?: string,
+  deviceType?: string
+): Promise<{ bucketDuration: string; data: { timestamp: string; p75: number }[] }> {
+  const now = new Date();
+  const actualEndTime = endTime ? parseISO(endTime) : now;
+  const actualStartTime = startTime ? parseISO(startTime) : subDays(now, 1);
+
+  // Calculate time range in days
+  const daysDifference = differenceInDays(actualEndTime, actualStartTime);
+
+  // Adjust bucket size based on time range
+  let actualInterval = interval;
+  if (daysDifference > 7) {
+    actualInterval = '1h';
+  } else if (daysDifference > 1) {
+    actualInterval = '10m';
+  }
+
+  const mustClauses = [
+    {
+      range: {
+        '@timestamp': {
+          gte: actualStartTime.toISOString(),
+          lte: actualEndTime.toISOString(),
+        },
+      },
+    },
+    {
+      term: {
+        event: 'web_vitals',
+      },
+    },
+  ];
+
+  if (room) mustClauses.push({ term: { 'room.keyword': room } });
+  if (sessionId) mustClauses.push({ term: { 'sessionId.keyword': sessionId } });
+  if (guestUser !== undefined) mustClauses.push({ term: { guestUser } });
+  if (continentCode) mustClauses.push({ term: { 'geoip.continentCode.keyword': continentCode } });
+  if (countryCode) mustClauses.push({ term: { 'geoip.countryCode.keyword': countryCode } });
+  if (browserName) mustClauses.push({ term: { 'user_agent.browser.name.keyword': browserName } });
+  if (ispName) mustClauses.push({ term: { 'geoip.ispName.keyword': ispName } });
+
+  if (deviceType === 'mobile') {
+    mustClauses.push({
+      term: {
+        'user_agent.device.type.keyword': 'mobile'
+      }
+    });
+  } else if (deviceType === 'desktop') {
+    mustClauses.push({
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
+          }
+        }
+      }
+    });
+  }
+
+  const response = await client.search({
+    index: 'analytics_v4_*',
+    body: {
+      size: 0,
+      query: {
+        bool: {
+          must: mustClauses,
+        },
+      },
+      aggs: {
+        histogram: {
+          date_histogram: {
+            field: '@timestamp',
+            fixed_interval: actualInterval,
+            min_doc_count: 1,
+          },
+          aggs: {
+            p75: {
+              percentiles: {
+                field: `payload_web_vitals_${metric}_value`,
+                percents: [75]
+              }
+            }
+          }
+        }
+      }
+    },
+  });
+
+  return {
+    bucketDuration: actualInterval,
+    data: response.body.aggregations.histogram.buckets.map((bucket: any) => ({
+      timestamp: bucket.key_as_string,
+      p75: bucket.p75.values['75.0'] || 0
+    }))
+  };
 }
