@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import { validateCredentials } from './auth';
 import {
   getPlayerQoEMetrics,
   getAutocompleteResults,
@@ -25,8 +26,37 @@ app.use(cors());
 // Enable gzip compression
 app.use(compression());
 
+// Parse JSON bodies
+app.use(express.json());
+
 // Create router for API v4 endpoints
 const apiV4Router = express.Router();
+
+// Login endpoint
+apiV4Router.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Validate required fields
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username and password are required'
+    });
+  }
+
+  // Validate credentials
+  if (validateCredentials(username, password)) {
+    res.json({
+      success: true,
+      message: 'Login successful'
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      error: 'Invalid credentials'
+    });
+  }
+});
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
