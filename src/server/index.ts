@@ -44,11 +44,12 @@ apiV4Router.post('/login', (req, res) => {
     });
   }
 
-  // Validate credentials
-  if (validateCredentials(username, password)) {
+  // Validate credentials and get auth response
+  const authResponse = validateCredentials(username, password);
+  if (authResponse) {
     res.json({
       success: true,
-      message: 'Login successful'
+      data: authResponse
     });
   } else {
     res.status(401).json({
