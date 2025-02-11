@@ -1,0 +1,160 @@
+{
+  "took": 4,
+  "timed_out": false,
+  "_shards": {
+    "total": 2,
+    "successful": 2,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 24,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "FCP": {
+      "buckets": {
+        "good": {
+          "doc_count": 21,
+          "p75": {
+            "values": {
+              "75.0": 1104.3500061035156
+            }
+          }
+        },
+        "needs-improvement": {
+          "doc_count": 2,
+          "p75": {
+            "values": {
+              "75.0": 2633.60009765625
+            }
+          }
+        },
+        "poor": {
+          "doc_count": 1,
+          "p75": {
+            "values": {
+              "75.0": 4254
+            }
+          }
+        }
+      }
+    },
+    "LCP": {
+      "buckets": {
+        "good": {
+          "doc_count": 13,
+          "p75": {
+            "values": {
+              "75.0": 1898
+            }
+          }
+        },
+        "needs-improvement": {
+          "doc_count": 2,
+          "p75": {
+            "values": {
+              "75.0": 2710.800048828125
+            }
+          }
+        },
+        "poor": {
+          "doc_count": 6,
+          "p75": {
+            "values": {
+              "75.0": 7502.2001953125
+            }
+          }
+        }
+      }
+    },
+    "INP": {
+      "buckets": {
+        "good": {
+          "doc_count": 3,
+          "p75": {
+            "values": {
+              "75.0": 130
+            }
+          }
+        },
+        "needs-improvement": {
+          "doc_count": 0,
+          "p75": {
+            "values": {
+              "75.0": null
+            }
+          }
+        },
+        "poor": {
+          "doc_count": 0,
+          "p75": {
+            "values": {
+              "75.0": null
+            }
+          }
+        }
+      }
+    },
+    "CLS": {
+      "buckets": {
+        "good": {
+          "doc_count": 7,
+          "p75": {
+            "values": {
+              "75.0": 0.008975000120699406
+            }
+          }
+        },
+        "needs-improvement": {
+          "doc_count": 1,
+          "p75": {
+            "values": {
+              "75.0": 0.11869999766349792
+            }
+          }
+        },
+        "poor": {
+          "doc_count": 6,
+          "p75": {
+            "values": {
+              "75.0": 1.0161000490188599
+            }
+          }
+        }
+      }
+    },
+    "TTFB": {
+      "buckets": {
+        "good": {
+          "doc_count": 16,
+          "p75": {
+            "values": {
+              "75.0": 416.8999938964844
+            }
+          }
+        },
+        "needs-improvement": {
+          "doc_count": 7,
+          "p75": {
+            "values": {
+              "75.0": 1064.5
+            }
+          }
+        },
+        "poor": {
+          "doc_count": 1,
+          "p75": {
+            "values": {
+              "75.0": 1811
+            }
+          }
+        }
+      }
+    }
+  }
+}

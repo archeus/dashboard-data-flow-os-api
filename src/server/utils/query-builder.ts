@@ -62,6 +62,9 @@ export function buildBasicFilters(params: FilterParams, eventType: 'player' | 'w
   if (params.ispName) {
     mustClauses.push({ term: { 'geoip.ispName.keyword': params.ispName } });
   }
+  if (params.route) {
+    mustClauses.push({ term: { 'shortPath.keyword': params.route } });
+  }
 
   const deviceTypeQuery = buildDeviceTypeQuery(params.deviceType);
   if (deviceTypeQuery) {

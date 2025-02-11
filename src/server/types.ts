@@ -13,6 +13,7 @@ export interface FilterParams extends TimeRange {
   browserName?: string;
   ispName?: string;
   deviceType?: string;
+  route?: string;
 }
 
 // QoE related interfaces

@@ -334,14 +334,14 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-      bool: {
-        must_not: {
-          exists: {
-            field: 'user_agent.device.type.keyword'
+        bool: {
+          must_not: {
+            exists: {
+              field: 'user_agent.device.type.keyword'
+            }
           }
         }
-      }
-    };
+      };
 
   const response = await client.search({
     index: INDEX_PATTERN,

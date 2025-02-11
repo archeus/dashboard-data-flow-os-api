@@ -302,6 +302,7 @@ apiV4Router.get('/agg/web-vitals', async (req, res) => {
       browserName,
       ispName,
       deviceType,
+      route,
     } = req.query;
 
     const metrics = await getWebVitalsMetrics({
@@ -314,7 +315,8 @@ apiV4Router.get('/agg/web-vitals', async (req, res) => {
       countryCode: countryCode as string,
       browserName: browserName as string,
       ispName: ispName as string,
-      deviceType: deviceType as string
+      deviceType: deviceType as string,
+      route: route as string
     });
 
     res.json({
@@ -343,6 +345,7 @@ apiV4Router.get('/agg/web-vitals/p75', async (req, res) => {
       browserName,
       ispName,
       deviceType,
+      route,
     } = req.query;
 
     const metrics = await getWebVitalsP75Metrics({
@@ -355,7 +358,8 @@ apiV4Router.get('/agg/web-vitals/p75', async (req, res) => {
       countryCode: countryCode as string,
       browserName: browserName as string,
       ispName: ispName as string,
-      deviceType: deviceType as string
+      deviceType: deviceType as string,
+      route: route as string
     });
 
     res.json({
@@ -386,6 +390,7 @@ apiV4Router.get('/agg/web-vitals/histogram', async (req, res) => {
       browserName,
       ispName,
       deviceType,
+      route,
     } = req.query;
 
     // Validate metric parameter
@@ -410,7 +415,8 @@ apiV4Router.get('/agg/web-vitals/histogram', async (req, res) => {
         countryCode: countryCode as string,
         browserName: browserName as string,
         ispName: ispName as string,
-        deviceType: deviceType as string
+        deviceType: deviceType as string,
+        route: route as string
       }
     );
 
