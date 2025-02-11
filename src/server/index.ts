@@ -162,19 +162,19 @@ apiV4Router.get('/agg/player/QoE', async (req, res) => {
       deviceType,
     } = req.query;
 
-    const metrics = await getPlayerQoEMetrics(
-      startTime as string,
-      endTime as string,
-      interval as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      countryCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
-    );
+    const metrics = await getPlayerQoEMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      interval: interval as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string
+    });
 
     res.json({
       success: true,
@@ -205,18 +205,18 @@ apiV4Router.get('/agg/player/overall', async (req, res) => {
       deviceType,
     } = req.query;
 
-    const metrics = await getPlayerOverallMetrics(
-      startTime as string,
-      endTime as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      countryCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
-    );
+    const metrics = await getPlayerOverallMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string
+    });
 
     res.json({
       success: true,
@@ -245,17 +245,17 @@ apiV4Router.get('/agg/player/country', async (req, res) => {
       deviceType,
     } = req.query;
 
-    const metrics = await getCountryQoEMetrics(
-      startTime as string,
-      endTime as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
-    );
+    const metrics = await getCountryQoEMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string
+    });
 
     res.json({
       success: true,
@@ -285,18 +285,18 @@ apiV4Router.get('/agg/web-vitals', async (req, res) => {
       deviceType,
     } = req.query;
 
-    const metrics = await getWebVitalsMetrics(
-      startTime as string,
-      endTime as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      countryCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
-    );
+    const metrics = await getWebVitalsMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string
+    });
 
     res.json({
       success: true,
@@ -326,18 +326,18 @@ apiV4Router.get('/agg/web-vitals/p75', async (req, res) => {
       deviceType,
     } = req.query;
 
-    const metrics = await getWebVitalsP75Metrics(
-      startTime as string,
-      endTime as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      countryCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
-    );
+    const metrics = await getWebVitalsP75Metrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string
+    });
 
     res.json({
       success: true,
@@ -380,17 +380,19 @@ apiV4Router.get('/agg/web-vitals/histogram', async (req, res) => {
 
     const data = await getWebVitalsHistogram(
       metric as 'FCP' | 'TTFB' | 'LCP' | 'INP' | 'CLS',
-      startTime as string,
-      endTime as string,
-      interval as string,
-      room as string,
-      sessionId as string,
-      guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
-      continentCode as string,
-      countryCode as string,
-      browserName as string,
-      ispName as string,
-      deviceType as string
+      {
+        startTime: startTime as string,
+        endTime: endTime as string,
+        interval: interval as string,
+        room: room as string,
+        sessionId: sessionId as string,
+        guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+        continentCode: continentCode as string,
+        countryCode: countryCode as string,
+        browserName: browserName as string,
+        ispName: ispName as string,
+        deviceType: deviceType as string
+      }
     );
 
     res.json({
