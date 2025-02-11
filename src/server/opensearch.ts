@@ -22,7 +22,8 @@ export const client = new Client({
 export async function getAutocompleteResults(
   field: string,
   prefix: string = '',
-  size: number = 10
+  size: number = 10,
+  event: string = 'player'
 ): Promise<AutocompleteResult[]> {
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -31,7 +32,7 @@ export async function getAutocompleteResults(
       query: {
         bool: {
           must: [
-            { term: { event: 'player' } },
+            event && { term: { event } },
             prefix && {
               wildcard: {
                 [field]: {

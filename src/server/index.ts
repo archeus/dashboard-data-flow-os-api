@@ -146,6 +146,25 @@ apiV4Router.get('/autocomplete/browser', async (req, res) => {
   }
 });
 
+apiV4Router.get('/autocomplete/route', async (req, res) => {
+  try {
+    const { q, size } = req.query;
+    const results = await getAutocompleteResults(
+      'shortPath.keyword',
+      q as string,
+      size ? parseInt(size as string) : undefined,
+      'web_vitals'
+    );
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('Error fetching route suggestions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch route suggestions',
+    });
+  }
+});
+
 apiV4Router.get('/agg/player/QoE', async (req, res) => {
   try {
     const {
