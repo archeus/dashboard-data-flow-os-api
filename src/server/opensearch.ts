@@ -1,5 +1,5 @@
 import { Client } from '@opensearch-project/opensearch';
-import { getTimeRange, calculateInterval } from './utils/time';
+import { getTimeRange, calculateInterval, shouldIncludeCardinality } from './utils/time';
 import { buildBasicFilters, buildTimeRangeQuery } from './utils/query-builder';
 import { calculateQoE, calculateMetricsFromResponse } from './utils/metrics';
 import { WEB_VITALS_METRICS, WEB_VITALS_NAMES, INDEX_PATTERN } from './constants';
@@ -11,7 +11,9 @@ import type {
   QoEMetricsResult,
   WebVitalsMetrics,
   WebVitalsP75Metrics,
-  WebVitalMetricType
+  WebVitalMetricType,
+  UserMetrics,
+  ActivityMetrics
 } from './types';
 
 // Initialize the OpenSearch client
@@ -155,10 +157,16 @@ export async function getPlayerOverallMetrics(params: FilterParams): Promise<Ove
 
 export async function getCountryQoEMetrics(params: FilterParams): Promise<CountryQoEMetric[]> {
   const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  const includeCardinality = shouldIncludeCardinality(actualStartTime, actualEndTime);
   const mustClauses = [
     buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString()),
     ...buildBasicFilters(params, 'player')
   ];
+
+  const cardinalityAggs = includeCardinality ? {
+    unique_sessions: { cardinality: { field: 'pageId.keyword' } },
+    unique_users: { cardinality: { field: 'sessionId.keyword' } }
+  } : {};
 
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -176,8 +184,7 @@ export async function getCountryQoEMetrics(params: FilterParams): Promise<Countr
             total_playtime: { sum: { field: 'payload_player_playtime' } },
             total_buffering: { sum: { field: 'payload_player_bufferingTime' } },
             location: { geo_centroid: { field: 'geoip.point' } },
-            unique_sessions: { cardinality: { field: 'pageId.keyword' } },
-            unique_users: { cardinality: { field: 'sessionId.keyword' } }
+            ...cardinalityAggs
           }
         }
       }
@@ -197,8 +204,8 @@ export async function getCountryQoEMetrics(params: FilterParams): Promise<Countr
       totalPlaytime: playtime,
       totalBufferingTime: bufferingTime,
       qoe: calculateQoE(playtime, bufferingTime),
-      totalSessions: bucket.unique_sessions.value,
-      uniqueUsers: bucket.unique_users.value
+      totalSessions: includeCardinality ? bucket.unique_sessions.value : null,
+      uniqueUsers: includeCardinality ? bucket.unique_users.value : null
     };
   });
 }
@@ -359,4 +366,190 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   });
 
   return response.body.hits.total.value;
+}
+
+export async function getUserMetrics(params: FilterParams): Promise<UserMetrics> {
+  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
+  const baseFilters = buildBasicFilters(params, 'page_ping');
+
+  const response = await client.search({
+    index: INDEX_PATTERN,
+    body: {
+      size: 0,
+      query: { bool: { must: [timeRangeQuery, ...baseFilters] } },
+      aggs: {
+        unique_users: {
+          cardinality: {
+            field: 'sessionId.keyword'
+          }
+        },
+        logged_in_users: {
+          filter: {
+            term: { guestUser: false }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        guest_users: {
+          filter: {
+            term: { guestUser: true }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        gold_users: {
+          filter: {
+            term: { al: 30 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        performers: {
+          filter: {
+            term: { al: 40 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        moderators: {
+          filter: {
+            term: { al: 47 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        guest_billing: {
+          filter: {
+            term: { al: 5 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        gold_free: {
+          filter: {
+            term: { al: 31 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        },
+        gold_promo: {
+          filter: {
+            term: { al: 33 }
+          },
+          aggs: {
+            count: {
+              cardinality: {
+                field: 'sessionId.keyword'
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const aggs = response.body.aggregations;
+  return {
+    uniqueUsers: aggs.unique_users.value,
+    loggedInUsers: aggs.logged_in_users.count.value,
+    guestUsers: aggs.guest_users.count.value,
+    goldUsers: aggs.gold_users.count.value,
+    performers: aggs.performers.count.value,
+    moderators: aggs.moderators.count.value,
+    guestBilling: aggs.guest_billing.count.value,
+    goldFree: aggs.gold_free.count.value,
+    goldPromo: aggs.gold_promo.count.value
+  };
+}
+
+export async function getActivityMetrics(params: FilterParams): Promise<ActivityMetrics> {
+  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
+  const baseFilters = buildBasicFilters(params, 'player');
+
+  const response = await client.search({
+    index: INDEX_PATTERN,
+    body: {
+      size: 0,
+      query: {
+        bool: {
+          must: [timeRangeQuery, ...baseFilters]
+        }
+      },
+      aggs: {
+        online_cams: {
+          cardinality: {
+            field: 'room.keyword'
+          }
+        },
+        tips: {
+          filter: {
+            terms: {
+              event: ['payment:pt', 'payment:t']
+            }
+          }
+        },
+        purchases: {
+          filter: {
+            term: {
+              event: 'ecommerce'
+            }
+          }
+        },
+        top_domains: {
+          terms: {
+            field: 'referer_origin.keyword',
+            size: 5
+          }
+        }
+      }
+    }
+  });
+
+  const aggs = response.body.aggregations;
+  return {
+    onlineCams: aggs.online_cams.value,
+    tips: aggs.tips.doc_count,
+    purchases: aggs.purchases.doc_count,
+    topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
+      domain: bucket.key,
+      count: bucket.doc_count
+    }))
+  };
 }

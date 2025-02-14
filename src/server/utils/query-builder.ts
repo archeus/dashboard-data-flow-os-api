@@ -32,7 +32,7 @@ export function buildDeviceTypeQuery(deviceType?: string) {
   return null;
 }
 
-export function buildBasicFilters(params: FilterParams, eventType: 'player' | 'web_vitals') {
+export function buildBasicFilters(params: FilterParams, eventType: 'player' | 'web_vitals' | 'page_ping') {
   const mustClauses = [
     {
       term: {

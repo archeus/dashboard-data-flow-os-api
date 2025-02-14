@@ -1,0 +1,86 @@
+# API Examples with default values and 24h time range
+@baseUrl = http://localhost:3000/api/v4
+@startTime = {{$datetime 'now-24h' 'YYYY-MM-DDTHH:mm:ss.SSS'}}Z
+@endTime = {{$datetime 'now' 'YYYY-MM-DDTHH:mm:ss.SSS'}}Z
+
+### Login
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "demo",
+  "password": "!202502demo!"
+}
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Autocomplete Endpoints
+# All autocomplete endpoints support optional 'q' for search prefix and 'size' for results limit
+
+GET {{baseUrl}}/autocomplete/continent?q=eu&size=10
+GET {{baseUrl}}/autocomplete/country?q=us&size=10
+GET {{baseUrl}}/autocomplete/isp?q=comcast&size=10
+GET {{baseUrl}}/autocomplete/room?q=test&size=10
+GET {{baseUrl}}/autocomplete/browser?q=chrome&size=10
+GET {{baseUrl}}/autocomplete/route?q=/&size=10
+GET {{baseUrl}}/autocomplete/device
+
+### Player QoE Metrics
+GET {{baseUrl}}/agg/player/QoE?startTime={{startTime}}&endTime={{endTime}}&interval=5m
+# Optional filters:
+# &room=room123
+# &sessionId=abc123
+# &guestUser=true
+# &continentCode=EU
+# &countryCode=US
+# &browserName=Chrome
+# &ispName=Comcast
+# &deviceType=desktop
+
+### Player Overall Metrics
+GET {{baseUrl}}/agg/player/overall?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as QoE metrics
+
+### Player Country Metrics
+GET {{baseUrl}}/agg/player/country?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as QoE metrics (except countryCode)
+
+### Web Vitals Metrics
+GET {{baseUrl}}/agg/web-vitals?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as QoE metrics plus:
+# &route=/home
+
+### Web Vitals P75 Metrics
+GET {{baseUrl}}/agg/web-vitals/p75?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as Web Vitals metrics
+
+### Web Vitals Histogram
+GET {{baseUrl}}/agg/web-vitals/histogram?metric=FCP&startTime={{startTime}}&endTime={{endTime}}&interval=5m
+# Required: metric (one of: FCP, TTFB, LCP, INP, CLS)
+# Supports same filters as Web Vitals metrics
+
+### User Metrics
+GET {{baseUrl}}/agg/users?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as Web Vitals metrics
+
+### Activity Metrics
+GET {{baseUrl}}/agg/activity?startTime={{startTime}}&endTime={{endTime}}
+# Supports same filters as Web Vitals metrics
+
+### Example with All Optional Filters
+GET {{baseUrl}}/agg/web-vitals?startTime={{startTime}}&endTime={{endTime}}&room=room123&sessionId=abc123&guestUser=false&continentCode=EU&countryCode=DE&browserName=Chrome&ispName=Telekom&deviceType=desktop&route=/home
+
+### Example for Mobile Users Only
+GET {{baseUrl}}/agg/users?startTime={{startTime}}&endTime={{endTime}}&deviceType=mobile
+
+### Example for Desktop Users in Europe
+GET {{baseUrl}}/agg/activity?startTime={{startTime}}&endTime={{endTime}}&deviceType=desktop&continentCode=EU
+
+### Curl Examples
+
+# Users endpoint with all filters
+# curl 'http://localhost:3000/api/v4/agg/users?startTime=2024-03-14T10:00:00.000Z&endTime=2024-03-15T10:00:00.000Z&room=room123&sessionId=abc123&guestUser=false&continentCode=EU&countryCode=DE&browserName=Chrome&ispName=Telekom&deviceType=desktop&route=/home'
+
+# Activity endpoint with all filters
+# curl 'http://localhost:3000/api/v4/agg/activity?startTime=2024-03-14T10:00:00.000Z&endTime=2024-03-15T10:00:00.000Z&room=room123&sessionId=abc123&guestUser=false&continentCode=EU&countryCode=DE&browserName=Chrome&ispName=Telekom&deviceType=desktop&route=/home'

@@ -11,7 +11,9 @@ import {
   getWebVitalsMetrics,
   getWebVitalsP75Metrics,
   getWebVitalsHistogram,
-  getDeviceTypeCount
+  getDeviceTypeCount,
+  getUserMetrics,
+  getActivityMetrics
 } from './opensearch'
 import { client } from './opensearch';
 
@@ -477,6 +479,92 @@ apiV4Router.get('/autocomplete/device', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch device type suggestions',
+    });
+  }
+});
+
+apiV4Router.get('/agg/users', async (req, res) => {
+  try {
+    const {
+      startTime,
+      endTime,
+      room,
+      sessionId,
+      guestUser,
+      continentCode,
+      countryCode,
+      browserName,
+      ispName,
+      deviceType,
+      route,
+    } = req.query;
+
+    const metrics = await getUserMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string,
+      route: route as string
+    });
+
+    res.json({
+      success: true,
+      data: metrics
+    });
+  } catch (error) {
+    console.error('Error fetching user metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch user metrics'
+    });
+  }
+});
+
+apiV4Router.get('/agg/activity', async (req, res) => {
+  try {
+    const {
+      startTime, 
+      endTime,
+      room,
+      sessionId,
+      guestUser,
+      continentCode,
+      countryCode,
+      browserName,
+      ispName,
+      deviceType,
+      route
+    } = req.query;
+
+    const metrics = await getActivityMetrics({
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string,
+      route: route as string
+    });
+
+    res.json({
+      success: true,
+      data: metrics
+    });
+  } catch (error) {
+    console.error('Error fetching activity metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch activity metrics'
     });
   }
 });

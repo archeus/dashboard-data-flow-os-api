@@ -8,6 +8,11 @@ export function getTimeRange(startTime?: string, endTime?: string): { actualStar
   return { actualStartTime, actualEndTime };
 }
 
+export function shouldIncludeCardinality(startTime: Date, endTime: Date): boolean {
+  const diffInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+  return diffInMinutes <= 90;
+}
+
 export function calculateInterval(startTime: Date, endTime: Date, defaultInterval: string = '1m'): string {
   const daysDifference = differenceInDays(endTime, startTime);
   

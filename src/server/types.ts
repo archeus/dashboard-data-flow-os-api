@@ -56,8 +56,8 @@ export interface CountryQoEMetric {
   qoe: number;
   totalPlaytime: number;
   totalBufferingTime: number;
-  totalSessions: number;
-  uniqueUsers: number;
+  totalSessions: number | null;
+  uniqueUsers: number | null;
 }
 
 // Web Vitals interfaces
@@ -92,3 +92,25 @@ export interface WebVitalsP75Metrics {
 }
 
 export type WebVitalMetricType = 'FCP' | 'TTFB' | 'LCP' | 'INP' | 'CLS';
+
+export interface UserMetrics {
+  uniqueUsers: number;
+  loggedInUsers: number;
+  guestUsers: number;
+  goldUsers: number;
+  performers: number;
+  moderators: number;
+  guestBilling: number;
+  goldFree: number;
+  goldPromo: number;
+}
+
+export interface ActivityMetrics {
+  onlineCams: number;
+  tips: number;
+  purchases: number;
+  topDomains: Array<{
+    domain: string;
+    count: number;
+  }>;
+}
