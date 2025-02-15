@@ -570,14 +570,14 @@ apiV4Router.get('/agg/activity', async (req, res) => {
   }
 });
 
-// Mount the v4 API router
-app.use('/api/v4', apiV4Router);
-
 // Serve countries GeoJSON with 1 year cache
-app.get('/data/countries-110m.json', (req, res) => {
+apiV4Router.get('/data/countries-110m.json', (req, res) => {
   res.set('Cache-Control', 'public, max-age=31536000'); // 1 year in seconds
   res.sendFile(path.join(process.cwd(), 'src/server/data/countries-110m.json'));
 });
+
+// Mount the v4 API router
+app.use('/api/v4', apiV4Router);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
