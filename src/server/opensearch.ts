@@ -70,7 +70,15 @@ export async function getPlayerQoEMetrics(params: FilterParams): Promise<QoEMetr
 
   const mustClauses = [
     buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString()),
-    ...buildBasicFilters(params, 'player')
+    ...buildBasicFilters(params, 'player'),
+    {
+      bool: {
+        must: [
+          { range: { payload_player_playtime: { gte: 0, lt: 40000 } } },
+          { range: { payload_player_bufferingTime: { gte: 0, lt: 40000 } } }
+        ]
+      }
+    }
   ];
 
   const response = await client.search({
@@ -111,13 +119,21 @@ export async function getPlayerOverallMetrics(params: FilterParams): Promise<Ove
   const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
   const baseFilters = buildBasicFilters(params, 'player');
+  const timeRangeFilters = {
+    bool: {
+      must: [
+        { range: { payload_player_playtime: { gte: 0, lt: 40000 } } },
+        { range: { payload_player_bufferingTime: { gte: 0, lt: 40000 } } }
+      ]
+    }
+  };
 
   const [overallResponse, guestResponse, loggedInResponse] = await Promise.all([
     client.search({
       index: INDEX_PATTERN,
       body: {
         size: 0,
-        query: { bool: { must: [timeRangeQuery, ...baseFilters] } },
+        query: { bool: { must: [timeRangeQuery, ...baseFilters, timeRangeFilters] } },
         aggs: {
           total_playtime: { sum: { field: 'payload_player_playtime' } },
           total_buffering: { sum: { field: 'payload_player_bufferingTime' } }
@@ -128,7 +144,7 @@ export async function getPlayerOverallMetrics(params: FilterParams): Promise<Ove
       index: INDEX_PATTERN,
       body: {
         size: 0,
-        query: { bool: { must: [timeRangeQuery, ...baseFilters, { term: { guestUser: true } }] } },
+        query: { bool: { must: [timeRangeQuery, ...baseFilters, timeRangeFilters, { term: { guestUser: true } }] } },
         aggs: {
           total_playtime: { sum: { field: 'payload_player_playtime' } },
           total_buffering: { sum: { field: 'payload_player_bufferingTime' } }
@@ -139,7 +155,7 @@ export async function getPlayerOverallMetrics(params: FilterParams): Promise<Ove
       index: INDEX_PATTERN,
       body: {
         size: 0,
-        query: { bool: { must: [timeRangeQuery, ...baseFilters, { term: { guestUser: false } }] } },
+        query: { bool: { must: [timeRangeQuery, ...baseFilters, timeRangeFilters, { term: { guestUser: false } }] } },
         aggs: {
           total_playtime: { sum: { field: 'payload_player_playtime' } },
           total_buffering: { sum: { field: 'payload_player_bufferingTime' } }
@@ -160,7 +176,15 @@ export async function getCountryQoEMetrics(params: FilterParams): Promise<Countr
   const includeCardinality = shouldIncludeCardinality(actualStartTime, actualEndTime);
   const mustClauses = [
     buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString()),
-    ...buildBasicFilters(params, 'player')
+    ...buildBasicFilters(params, 'player'),
+    {
+      bool: {
+        must: [
+          { range: { payload_player_playtime: { gte: 0, lt: 40000 } } },
+          { range: { payload_player_bufferingTime: { gte: 0, lt: 40000 } } }
+        ]
+      }
+    }
   ];
 
   const cardinalityAggs = includeCardinality ? {
@@ -341,14 +365,14 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-        bool: {
-          must_not: {
-            exists: {
-              field: 'user_agent.device.type.keyword'
-            }
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
           }
         }
-      };
+      }
+    };
 
   const response = await client.search({
     index: INDEX_PATTERN,
