@@ -32,14 +32,14 @@ export function buildDeviceTypeQuery(deviceType?: string) {
   return null;
 }
 
-export function buildBasicFilters(params: FilterParams, eventType: 'player' | 'web_vitals' | 'page_ping') {
+export function buildBasicFilters(params: FilterParams, eventType?: 'player' | 'web_vitals' | 'page_ping') {
   const mustClauses = [
-    {
+    eventType && {
       term: {
         event: eventType,
       },
-    },
-  ];
+    }
+  ].filter(Boolean);
 
   if (params.room) {
     mustClauses.push({ term: { 'room.keyword': params.room } });

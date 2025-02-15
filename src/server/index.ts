@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
+dotenv.config();
 import { validateCredentials } from './auth';
 import {
   getPlayerQoEMetrics,
@@ -17,7 +18,6 @@ import {
 } from './opensearch'
 import { client } from './opensearch';
 
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;

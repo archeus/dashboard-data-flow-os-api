@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { Client } from '@opensearch-project/opensearch';
 import { getTimeRange, calculateInterval, shouldIncludeCardinality } from './utils/time';
 import { buildBasicFilters, buildTimeRangeQuery } from './utils/query-builder';
@@ -525,7 +528,7 @@ export async function getUserMetrics(params: FilterParams): Promise<UserMetrics>
 export async function getActivityMetrics(params: FilterParams): Promise<ActivityMetrics> {
   const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
-  const baseFilters = buildBasicFilters(params, 'player');
+  const baseFilters = buildBasicFilters(params);
 
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -557,9 +560,28 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
           }
         },
         top_domains: {
-          terms: {
-            field: 'referer_origin.keyword',
-            size: 5
+          filter: {
+            term: {
+              event: 'page_ping'
+            }
+          },
+          aggs: {
+            by_domain: {
+              terms: {
+                field: 'referer_origin.keyword',
+                size: 10,
+                order: {
+                  "duration_sum": "desc"
+                }
+              },
+              aggs: {
+                duration_sum: {
+                  sum: {
+                    field: 'payload_page_ping_duration'
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -568,12 +590,13 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
 
   const aggs = response.body.aggregations;
   return {
-    onlineCams: aggs.online_cams.value,
+    onlineCams: aggs.online_cams?.value,
     tips: aggs.tips.doc_count,
     purchases: aggs.purchases.doc_count,
-    topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
+    topDomains: aggs.top_domains.by_domain.buckets.map((bucket: any) => ({
       domain: bucket.key,
-      count: bucket.doc_count
+      count: bucket.doc_count,
+      duration: bucket.duration_sum.value
     }))
   };
 }
