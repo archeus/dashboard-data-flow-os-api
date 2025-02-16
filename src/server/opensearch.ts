@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { Client } from '@opensearch-project/opensearch';
-import { getTimeRange, calculateInterval, shouldIncludeCardinality } from './utils/time';
+import { getTimeRange, calculateInterval, shouldIncludeCardinality, getTimeRangeFromDuration } from './utils/time'
 import { buildBasicFilters, buildTimeRangeQuery } from './utils/query-builder';
 import { calculateQoE, calculateMetricsFromResponse } from './utils/metrics';
 import { WEB_VITALS_METRICS, WEB_VITALS_NAMES, INDEX_PATTERN } from './constants';
@@ -288,7 +288,14 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 }
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
-  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
   const mustClauses = [
     buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString()),
     ...buildBasicFilters(params, 'web_vitals')

@@ -2,6 +2,7 @@
 export interface TimeRange {
   startTime?: string;
   endTime?: string;
+  duration?: string;
 }
 
 export interface FilterParams extends TimeRange {
