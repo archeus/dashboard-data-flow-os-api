@@ -245,7 +245,14 @@ export async function getCountryQoEMetrics(params: FilterParams): Promise<Countr
 }
 
 export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVitalsMetrics> {
-  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
   const mustClauses = [
     buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString()),
     ...buildBasicFilters(params, 'web_vitals')
@@ -347,7 +354,14 @@ export async function getWebVitalsHistogram(
   metric: WebVitalMetricType,
   params: FilterParams
 ): Promise<{ bucketDuration: string; data: { timestamp: string; p75: number }[] }> {
-  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
   const interval = calculateInterval(actualStartTime, actualEndTime, params.interval);
 
   const mustClauses = [

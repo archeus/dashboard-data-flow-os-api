@@ -348,6 +348,7 @@ apiV4Router.get('/agg/web-vitals', async (req, res) => {
     const {
       startTime,
       endTime,
+      duration,
       room,
       sessionId,
       guestUser,
@@ -359,7 +360,15 @@ apiV4Router.get('/agg/web-vitals', async (req, res) => {
       route,
     } = req.query;
 
+    if (duration && !['15min', '1h', '1d', '2d', '3d'].includes(duration as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d'
+      });
+    }
+
     const metrics = await getWebVitalsMetrics({
+      duration: duration as string,
       startTime: startTime as string,
       endTime: endTime as string,
       room: room as string,
@@ -444,6 +453,7 @@ apiV4Router.get('/agg/web-vitals/histogram', async (req, res) => {
       metric,
       startTime,
       endTime,
+      duration,
       interval,
       room,
       sessionId,
@@ -465,9 +475,17 @@ apiV4Router.get('/agg/web-vitals/histogram', async (req, res) => {
       });
     }
 
+    if (duration && !['15min', '1h', '1d', '2d', '3d'].includes(duration as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d'
+      });
+    }
+
     const data = await getWebVitalsHistogram(
       metric as 'FCP' | 'TTFB' | 'LCP' | 'INP' | 'CLS',
       {
+        duration: duration as string,
         startTime: startTime as string,
         endTime: endTime as string,
         interval: interval as string,
