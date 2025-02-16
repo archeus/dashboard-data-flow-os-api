@@ -28,8 +28,13 @@ export async function getAutocompleteResults(
   field: string,
   prefix: string = '',
   size: number = 10,
-  event: string = 'player'
+  event: string = 'player',
+  startTime?: string,
+  endTime?: string
 ): Promise<AutocompleteResult[]> {
+  const { actualStartTime, actualEndTime } = getTimeRange(startTime, endTime);
+  const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
+
   const response = await client.search({
     index: INDEX_PATTERN,
     body: {
@@ -37,6 +42,7 @@ export async function getAutocompleteResults(
       query: {
         bool: {
           must: [
+            timeRangeQuery,
             event && { term: { event } },
             prefix && {
               wildcard: {
@@ -368,14 +374,14 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-      bool: {
-        must_not: {
-          exists: {
-            field: 'user_agent.device.type.keyword'
+        bool: {
+          must_not: {
+            exists: {
+              field: 'user_agent.device.type.keyword'
+            }
           }
         }
-      }
-    };
+      };
 
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -560,28 +566,10 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
           }
         },
         top_domains: {
-          filter: {
-            term: {
-              event: 'page_ping'
-            }
-          },
-          aggs: {
-            by_domain: {
-              terms: {
-                field: 'referer_origin.keyword',
-                size: 10,
-                order: {
-                  "duration_sum": "desc"
-                }
-              },
-              aggs: {
-                duration_sum: {
-                  sum: {
-                    field: 'payload_page_ping_duration'
-                  }
-                }
-              }
-            }
+          terms: {
+            field: 'referer_origin.keyword',
+            size: 5,
+            order: { "_count": "desc" }
           }
         }
       }
@@ -590,13 +578,12 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
 
   const aggs = response.body.aggregations;
   return {
-    onlineCams: aggs.online_cams?.value,
+    onlineCams: aggs.online_cams.value,
     tips: aggs.tips.doc_count,
     purchases: aggs.purchases.doc_count,
-    topDomains: aggs.top_domains.by_domain.buckets.map((bucket: any) => ({
+    topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
       domain: bucket.key,
-      count: bucket.doc_count,
-      duration: bucket.duration_sum.value
+      count: bucket.doc_count
     }))
   };
 }

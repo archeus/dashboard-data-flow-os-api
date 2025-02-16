@@ -92,11 +92,14 @@ app.get('/health', async (req, res) => {
 // Autocomplete endpoints
 apiV4Router.get('/autocomplete/continent', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'geoip.continentCode.keyword',
       q as string,
-      size ? parseInt(size as string) : undefined
+      size ? parseInt(size as string) : undefined,
+      'player',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
@@ -110,11 +113,14 @@ apiV4Router.get('/autocomplete/continent', async (req, res) => {
 
 apiV4Router.get('/autocomplete/country', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'geoip.countryCode.keyword',
       q as string,
-      size ? parseInt(size as string) : undefined
+      size ? parseInt(size as string) : undefined,
+      'player',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
@@ -128,11 +134,14 @@ apiV4Router.get('/autocomplete/country', async (req, res) => {
 
 apiV4Router.get('/autocomplete/isp', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'geoip.ispName.keyword',
       q as string,
-      size ? parseInt(size as string) : undefined
+      size ? parseInt(size as string) : undefined,
+      'player',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
@@ -146,11 +155,14 @@ apiV4Router.get('/autocomplete/isp', async (req, res) => {
 
 apiV4Router.get('/autocomplete/room', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'room.keyword',
       q as string,
-      size ? parseInt(size as string) : undefined
+      size ? parseInt(size as string) : undefined,
+      'player',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
@@ -164,11 +176,14 @@ apiV4Router.get('/autocomplete/room', async (req, res) => {
 
 apiV4Router.get('/autocomplete/browser', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'user_agent.browser.name.keyword',
       q as string,
-      size ? parseInt(size as string) : undefined
+      size ? parseInt(size as string) : undefined,
+      'player',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
@@ -182,12 +197,14 @@ apiV4Router.get('/autocomplete/browser', async (req, res) => {
 
 apiV4Router.get('/autocomplete/route', async (req, res) => {
   try {
-    const { q, size } = req.query;
+    const { q, size, startTime, endTime } = req.query;
     const results = await getAutocompleteResults(
       'shortPath.keyword',
       q as string,
       size ? parseInt(size as string) : undefined,
-      'web_vitals'
+      'web_vitals',
+      startTime as string,
+      endTime as string
     );
     res.json({ success: true, data: results });
   } catch (error) {
