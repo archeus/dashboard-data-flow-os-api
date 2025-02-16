@@ -3,6 +3,9 @@ import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
+import { startCacheUpdaters } from './cache/redis';
+import { updateWebVitalsP75Cache } from './cache/updater';
+import { getCachedWebVitalsP75 } from './cache/redis';
 dotenv.config();
 import { validateCredentials } from './auth';
 import {
@@ -604,6 +607,9 @@ apiV4Router.get('/data/countries-110m.json', (req, res) => {
 
 // Mount the v4 API router
 app.use('/api/v4', apiV4Router);
+
+// Start cache updaters
+startCacheUpdaters(updateWebVitalsP75Cache);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

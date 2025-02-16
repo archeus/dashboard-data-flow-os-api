@@ -18,6 +18,7 @@ import type {
   UserMetrics,
   ActivityMetrics
 } from './types';
+import { getCachedWebVitalsP75 } from './cache/redis.ts'
 
 // Initialize the OpenSearch client
 export const client = new Client({
@@ -288,6 +289,17 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 }
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
+  // If using duration parameter and no other filters except deviceType, check cache
+  if (params.duration && !params.startTime && !params.endTime && 
+      !params.room && !params.sessionId && !params.guestUser && 
+      !params.continentCode && !params.countryCode && !params.browserName && 
+      !params.ispName && !params.route) {
+    const cached = await getCachedWebVitalsP75(params.duration, params.deviceType);
+    if (cached) {
+      return cached;
+    }
+  }
+
   let timeRange;
   if (params.duration) {
     timeRange = getTimeRangeFromDuration(params.duration);
