@@ -18,7 +18,8 @@ import {
   getWebVitalsHistogram,
   getDeviceTypeCount,
   getUserMetrics,
-  getActivityMetrics
+  getActivityMetrics,
+  getEventCount
 } from './opensearch'
 import { client } from './opensearch';
 
@@ -38,6 +39,36 @@ app.use(express.json());
 // Create router for API v4 endpoints
 const apiV4Router = express.Router();
 
+// Session proxy endpoint
+apiV4Router.all('/sessions/*', async (req, res) => {
+  const baseUrl = process.env.SESSION_AGG_URL || 'http://dashboard-data-flow-os-agg:300';
+  const targetPath = req.url.replace('/sessions', '/api/sessions');
+  const targetUrl = new URL(targetPath, baseUrl).toString();
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: new URL(baseUrl).host
+      },
+      body: req.body ? JSON.stringify(req.body) : undefined,
+    });
+
+    const data = await response.text();
+    res.status(response.status).set(response.headers).send(data);
+  } catch (error) {
+    console.error('Proxy request error:', error);
+    const errorMessage = process.env.NODE_ENV === 'production' 
+      ? 'An internal server error occurred'
+      : 'Failed to connect to session service';
+    
+    res.status(502).json({
+      success: false,
+      error: errorMessage
+    });
+  }
+});
 // Login endpoint
 apiV4Router.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -617,6 +648,61 @@ apiV4Router.get('/agg/activity', async (req, res) => {
   }
 });
 
+apiV4Router.get('/agg/events', async (req, res) => {
+  try {
+    const {
+      duration,
+      startTime,
+      endTime,
+      room,
+      sessionId,
+      guestUser,
+      continentCode,
+      countryCode,
+      browserName,
+      ispName,
+      deviceType,
+      route
+    } = req.query;
+
+    if (duration && !['15min', '1h', '1d', '2d', '3d'].includes(duration as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d'
+      });
+    }
+
+    const metrics = await getEventCount({
+      duration: duration as string,
+      startTime: startTime as string,
+      endTime: endTime as string,
+      room: room as string,
+      sessionId: sessionId as string,
+      guestUser: guestUser === 'true' ? true : guestUser === 'false' ? false : undefined,
+      continentCode: continentCode as string,
+      countryCode: countryCode as string,
+      browserName: browserName as string,
+      ispName: ispName as string,
+      deviceType: deviceType as string,
+      route: route as string
+    });
+
+    res.json({
+      success: true,
+      data: {
+        count: metrics.count,
+        interval: metrics.interval
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching event counts:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch event counts'
+    });
+  }
+});
+
 // Serve countries GeoJSON with 1 year cache
 apiV4Router.get('/data/countries-110m.json', (req, res) => {
   res.set('Cache-Control', 'public, max-age=31536000'); // 1 year in seconds
@@ -626,8 +712,10 @@ apiV4Router.get('/data/countries-110m.json', (req, res) => {
 // Mount the v4 API router
 app.use('/api/v4', apiV4Router);
 
-// Start cache updaters
-startCacheUpdaters(updateWebVitalsP75Cache);
+// Start cache updaters if enabled (defaults to true)
+if (process.env.ENABLE_CACHE_UPDATERS !== 'false') {
+  startCacheUpdaters(updateWebVitalsP75Cache);
+}
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

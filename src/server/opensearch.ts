@@ -16,7 +16,8 @@ import type {
   WebVitalsP75Metrics,
   WebVitalMetricType,
   UserMetrics,
-  ActivityMetrics
+  ActivityMetrics,
+  EventCountResponse
 } from './types';
 import { getCachedWebVitalsP75 } from './cache/redis.ts'
 
@@ -618,5 +619,41 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
       domain: bucket.key,
       count: bucket.doc_count
     }))
+  };
+}
+
+export async function getEventCount(params: FilterParams): Promise<EventCountResponse> {
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
+  const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
+  const baseFilters = buildBasicFilters(params);
+
+  const mustClauses = [timeRangeQuery, ...baseFilters];
+  if (params.event) {
+    mustClauses.push({ term: { 'event.keyword': params.event } });
+  }
+
+  const response = await client.search({
+    index: INDEX_PATTERN,
+    body: {
+      size: 0,
+      query: {
+        bool: {
+          must: mustClauses
+        }
+      }
+    }
+  });
+
+  const interval = params.duration || calculateInterval(actualStartTime, actualEndTime);
+  return {
+    count: response.body.hits.total.value,
+    interval
   };
 }

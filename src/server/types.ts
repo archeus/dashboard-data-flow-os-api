@@ -8,6 +8,7 @@ export interface TimeRange {
 export interface FilterParams extends TimeRange {
   room?: string;
   sessionId?: string;
+  event?: string;
   guestUser?: boolean;
   continentCode?: string;
   countryCode?: string;
@@ -114,4 +115,9 @@ export interface ActivityMetrics {
     domain: string;
     count: number;
   }>;
+}
+
+export interface EventCountResponse {
+  count: number;
+  interval?: string;
 }
