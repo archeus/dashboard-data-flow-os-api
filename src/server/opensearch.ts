@@ -299,10 +299,10 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
   // If using duration parameter and no other filters except deviceType, check cache
-  if (params.duration && !params.startTime && !params.endTime && 
-      !params.room && !params.sessionId && !params.guestUser && 
-      !params.continentCode && !params.countryCode && !params.browserName && 
-      !params.ispName && !params.route) {
+  if (params.duration && !params.startTime && !params.endTime &&
+    !params.room && !params.sessionId && !params.guestUser &&
+    !params.continentCode && !params.countryCode && !params.browserName &&
+    !params.ispName && !params.route) {
     const cached = await getCachedWebVitalsP75(params.duration, params.deviceType);
     if (cached) {
       return cached;
@@ -409,14 +409,14 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-        bool: {
-          must_not: {
-            exists: {
-              field: 'user_agent.device.type.keyword'
-            }
+      bool: {
+        must_not: {
+          exists: {
+            field: 'user_agent.device.type.keyword'
           }
         }
-      };
+      }
+    };
 
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -589,8 +589,20 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
       },
       aggs: {
         online_cams: {
-          cardinality: {
-            field: 'room.keyword'
+          filter: {
+            bool: {
+              must: [
+                { term: { event: 'player' } },
+                { range: { payload_player_playtime: { gt: 0 } } }
+              ]
+            }
+          },
+          aggs: {
+            unique_rooms: {
+              cardinality: {
+                field: 'room.keyword'
+              }
+            }
           }
         },
         tips: {
@@ -614,6 +626,34 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
             }
           }
         },
+        private_show_rooms: {
+          filter: {
+            terms: {
+              event: ['payment:ps:start']
+            }
+          },
+          aggs: {
+            unique_rooms: {
+              cardinality: {
+                field: 'room.keyword'
+              }
+            }
+          }
+        },
+        tipped_rooms: {
+          filter: {
+            terms: {
+              event: ['payment:pt', 'payment:t']
+            }
+          },
+          aggs: {
+            unique_rooms: {
+              cardinality: {
+                field: 'room.keyword'
+              }
+            }
+          }
+        },
         top_domains: {
           terms: {
             field: 'referer_origin.keyword',
@@ -627,10 +667,12 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
 
   const aggs = response.body.aggregations;
   return {
-    onlineCams: aggs.online_cams.value,
+    onlineCams: aggs.online_cams.unique_rooms.value,
     tips: aggs.tips.doc_count,
     purchases: aggs.purchases.doc_count,
     privateShows: aggs.privateShows.doc_count,
+    privateShowRooms: aggs.private_show_rooms.unique_rooms.value,
+    tippedRooms: aggs.tipped_rooms.unique_rooms.value,
     topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
       domain: bucket.key,
       count: bucket.doc_count
@@ -659,7 +701,7 @@ export async function getEventCount(params: FilterParams): Promise<EventCountRes
     index: INDEX_PATTERN,
     body: {
       size: 0,
-     track_total_hits: true,
+      track_total_hits: true,
       query: {
         bool: {
           must: mustClauses
@@ -686,7 +728,7 @@ export async function getCountryRoomMetrics(params: FilterParams): Promise<Count
 
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
   const mustClauses = [timeRangeQuery];
-  
+
   if (params.countryCode) {
     mustClauses.push({ term: { 'geoip.countryCode.keyword': params.countryCode } });
   }

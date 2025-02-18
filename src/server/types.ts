@@ -112,6 +112,8 @@ export interface ActivityMetrics {
   tips: number;
   purchases: number;
   privateShows: number;
+  privateShowRooms: number;
+  tippedRooms: number;
   topDomains: Array<{
     domain: string;
     count: number;
