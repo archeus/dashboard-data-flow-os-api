@@ -111,6 +111,7 @@ export interface ActivityMetrics {
   onlineCams: number;
   tips: number;
   purchases: number;
+  privateShows: number;
   topDomains: Array<{
     domain: string;
     count: number;

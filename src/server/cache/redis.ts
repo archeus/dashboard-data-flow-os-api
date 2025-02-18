@@ -44,7 +44,7 @@ export async function cacheWebVitalsP75(duration: string, deviceType: string | u
 export async function acquireLock(duration: string, deviceType: string | undefined): Promise<boolean> {
   const lockKey = `cwv_p75_${duration}${deviceType ? '_' + deviceType : ''}_lock`;
   const lockTTL = LOCK_DURATIONS[duration as keyof typeof LOCK_DURATIONS];
-
+  
   // Use SET NX with expiry to implement locking
   const result = await redis.set(lockKey, '1', 'EX', lockTTL, 'NX');
   return result === 'OK';
@@ -75,7 +75,7 @@ export function startCacheUpdaters(updateCallback: (duration: string, deviceType
   updateAllCaches(updateCallback).catch(console.error);
 
   const deviceTypes = [undefined, 'mobile', 'desktop'];
-
+  
   // For each duration and device type combination
   Object.entries(UPDATE_INTERVALS).forEach(([duration, interval]) => {
     deviceTypes.forEach(deviceType => {
@@ -83,10 +83,10 @@ export function startCacheUpdaters(updateCallback: (duration: string, deviceType
       setTimeout(() => {
         updateCallback(duration, deviceType).catch(console.error);
       }, getRandomDelay());
-
+      
       // Schedule periodic updates
       let timeoutId: NodeJS.Timeout;
-
+      
       function scheduleNextUpdate() {
         const nextInterval = interval + getRandomDelay();
         timeoutId = setTimeout(() => {
@@ -97,7 +97,7 @@ export function startCacheUpdaters(updateCallback: (duration: string, deviceType
             });
         }, nextInterval);
       }
-
+      
       scheduleNextUpdate();
     });
   });

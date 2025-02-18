@@ -611,6 +611,7 @@ apiV4Router.get('/agg/users', async (req, res) => {
 apiV4Router.get('/agg/activity', async (req, res) => {
   try {
     const {
+      duration,
       startTime, 
       endTime,
       room,
@@ -624,7 +625,15 @@ apiV4Router.get('/agg/activity', async (req, res) => {
       route
     } = req.query;
 
+    if (duration && !['15min', '1h', '1d', '2d', '3d'].includes(duration as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d'
+      });
+    }
+
     const metrics = await getActivityMetrics({
+      duration: duration as string,
       startTime: startTime as string,
       endTime: endTime as string,
       room: room as string,

@@ -567,7 +567,14 @@ export async function getUserMetrics(params: FilterParams): Promise<UserMetrics>
 }
 
 export async function getActivityMetrics(params: FilterParams): Promise<ActivityMetrics> {
-  const { actualStartTime, actualEndTime } = getTimeRange(params.startTime, params.endTime);
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
   const baseFilters = buildBasicFilters(params);
 
@@ -600,10 +607,17 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
             }
           }
         },
+        privateShows: {
+          filter: {
+            terms: {
+              event: ['payment:ps:start']
+            }
+          }
+        },
         top_domains: {
           terms: {
             field: 'referer_origin.keyword',
-            size: 5,
+            size: 10,
             order: { "_count": "desc" }
           }
         }
@@ -616,6 +630,7 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
     onlineCams: aggs.online_cams.value,
     tips: aggs.tips.doc_count,
     purchases: aggs.purchases.doc_count,
+    privateShows: aggs.privateShows.doc_count,
     topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
       domain: bucket.key,
       count: bucket.doc_count
