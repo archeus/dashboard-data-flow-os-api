@@ -676,7 +676,9 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
     topDomains: aggs.top_domains.buckets.map((bucket: any) => ({
       domain: bucket.key,
       count: bucket.doc_count
-    }))
+    })),
+    duration: params.duration,
+    offset: params.offset
   };
 }
 

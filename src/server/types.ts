@@ -119,6 +119,8 @@ export interface ActivityMetrics {
     domain: string;
     count: number;
   }>;
+  duration?: string;
+  offset?: string;
 }
 
 export interface EventCountResponse {
