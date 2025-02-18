@@ -612,6 +612,7 @@ apiV4Router.get('/agg/activity', async (req, res) => {
   try {
     const {
       duration,
+      offset,
       startTime, 
       endTime,
       room,
@@ -632,8 +633,16 @@ apiV4Router.get('/agg/activity', async (req, res) => {
       });
     }
 
+    if (offset && !['15min', '1h', '1d', '1w', '1m'].includes(offset as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid offset. Supported values: 15min, 1h, 1d, 1w, 1m'
+      });
+    }
+
     const metrics = await getActivityMetrics({
       duration: duration as string,
+      offset: offset as string,
       startTime: startTime as string,
       endTime: endTime as string,
       room: room as string,

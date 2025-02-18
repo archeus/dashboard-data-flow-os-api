@@ -3,6 +3,7 @@ export interface TimeRange {
   startTime?: string;
   endTime?: string;
   duration?: string;
+  offset?: string;
 }
 
 export interface FilterParams extends TimeRange {

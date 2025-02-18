@@ -299,10 +299,10 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
   // If using duration parameter and no other filters except deviceType, check cache
-  if (params.duration && !params.startTime && !params.endTime &&
-    !params.room && !params.sessionId && !params.guestUser &&
-    !params.continentCode && !params.countryCode && !params.browserName &&
-    !params.ispName && !params.route) {
+  if (params.duration && !params.startTime && !params.endTime && 
+      !params.room && !params.sessionId && !params.guestUser && 
+      !params.continentCode && !params.countryCode && !params.browserName && 
+      !params.ispName && !params.route) {
     const cached = await getCachedWebVitalsP75(params.duration, params.deviceType);
     if (cached) {
       return cached;
@@ -409,14 +409,14 @@ export async function getDeviceTypeCount(type: 'mobile' | 'desktop'): Promise<nu
   const query = type === 'mobile'
     ? { term: { 'user_agent.device.type.keyword': 'mobile' } }
     : {
-      bool: {
-        must_not: {
-          exists: {
-            field: 'user_agent.device.type.keyword'
+        bool: {
+          must_not: {
+            exists: {
+              field: 'user_agent.device.type.keyword'
+            }
           }
         }
-      }
-    };
+      };
 
   const response = await client.search({
     index: INDEX_PATTERN,
@@ -569,7 +569,7 @@ export async function getUserMetrics(params: FilterParams): Promise<UserMetrics>
 export async function getActivityMetrics(params: FilterParams): Promise<ActivityMetrics> {
   let timeRange;
   if (params.duration) {
-    timeRange = getTimeRangeFromDuration(params.duration);
+    timeRange = getTimeRangeFromDuration(params.duration, params.offset);
   } else {
     timeRange = getTimeRange(params.startTime, params.endTime);
   }
@@ -701,7 +701,7 @@ export async function getEventCount(params: FilterParams): Promise<EventCountRes
     index: INDEX_PATTERN,
     body: {
       size: 0,
-      track_total_hits: true,
+     track_total_hits: true,
       query: {
         bool: {
           must: mustClauses
@@ -728,7 +728,7 @@ export async function getCountryRoomMetrics(params: FilterParams): Promise<Count
 
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
   const mustClauses = [timeRangeQuery];
-
+  
   if (params.countryCode) {
     mustClauses.push({ term: { 'geoip.countryCode.keyword': params.countryCode } });
   }

@@ -1,31 +1,55 @@
 import { subDays, parseISO, differenceInDays } from 'date-fns';
 import { TimeRange } from '../types';
 
-export function getTimeRangeFromDuration(duration: string): { actualStartTime: Date; actualEndTime: Date } {
+export function getTimeRangeFromDuration(duration: string, offset?: string): { actualStartTime: Date; actualEndTime: Date } {
   const now = new Date();
-  let actualStartTime: Date;
+  let endTime = now;
+  let startTime: Date;
+  
+  // Apply offset if provided
+  if (offset) {
+    switch (offset) {
+      case '15min':
+        endTime = new Date(now.getTime() - 15 * 60 * 1000);
+        break;
+      case '1h':
+        endTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '1d':
+        endTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '1w':
+        endTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '1m':
+        endTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        throw new Error('Invalid offset. Supported values: 15min, 1h, 1d, 1w, 1m');
+    }
+  }
 
   switch (duration) {
     case '15min':
-      actualStartTime = new Date(now.getTime() - 15 * 60 * 1000);
+      startTime = new Date(endTime.getTime() - 15 * 60 * 1000);
       break;
     case '1h':
-      actualStartTime = new Date(now.getTime() - 60 * 60 * 1000);
+      startTime = new Date(endTime.getTime() - 60 * 60 * 1000);
       break;
     case '1d':
-      actualStartTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000);
       break;
     case '2d':
-      actualStartTime = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+      startTime = new Date(endTime.getTime() - 48 * 60 * 60 * 1000);
       break;
     case '3d':
-      actualStartTime = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+      startTime = new Date(endTime.getTime() - 72 * 60 * 60 * 1000);
       break;
     default:
       throw new Error('Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d');
   }
 
-  return { actualStartTime, actualEndTime: now };
+  return { actualStartTime: startTime, actualEndTime: endTime };
 }
 
 export function getTimeRange(startTime?: string, endTime?: string): { actualStartTime: Date; actualEndTime: Date } {
