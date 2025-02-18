@@ -49,14 +49,13 @@ apiV4Router.all('/sessions/*', async (req, res) => {
     const response = await fetch(targetUrl, {
       method: req.method,
       headers: {
-        ...req.headers,
         host: new URL(baseUrl).host
       },
       body: req.body && Object.keys(req.body).length > 0 ? JSON.stringify(req.body) : undefined
     });
 
     const data = await response.text();
-    res.status(response.status).set(response.headers).send(data);
+    res.status(response.status).set('content-type', response.headers.get('content-type')).send(data);
   } catch (error) {
     console.error('Proxy request error:', error);
     const errorMessage = process.env.NODE_ENV === 'production'
