@@ -619,6 +619,13 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
             }
           }
         },
+        cashouts: {
+          filter: {
+            term: {
+              event: 'cashout'
+            }
+          }
+        },
         privateShows: {
           filter: {
             terms: {
@@ -670,6 +677,7 @@ export async function getActivityMetrics(params: FilterParams): Promise<Activity
     onlineCams: aggs.online_cams.unique_rooms.value,
     tips: aggs.tips.doc_count,
     purchases: aggs.purchases.doc_count,
+    cashouts: aggs.cashouts.doc_count,
     privateShows: aggs.privateShows.doc_count,
     privateShowRooms: aggs.private_show_rooms.unique_rooms.value,
     tippedRooms: aggs.tipped_rooms.unique_rooms.value,

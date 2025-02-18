@@ -112,6 +112,7 @@ export interface ActivityMetrics {
   onlineCams: number;
   tips: number;
   purchases: number;
+  cashouts: number;
   privateShows: number;
   privateShowRooms: number;
   tippedRooms: number;
