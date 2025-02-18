@@ -131,4 +131,8 @@ export interface CountryRoomMetrics {
     room: string;
     watchTime: number;
   }>;
+  topBufferingRooms: Array<{
+    room: string;
+    bufferingTime: number;
+  }>;
 }

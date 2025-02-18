@@ -299,9 +299,9 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
   // If using duration parameter and no other filters except deviceType, check cache
-  if (params.duration && !params.startTime && !params.endTime &&
-      !params.room && !params.sessionId && !params.guestUser &&
-      !params.continentCode && !params.countryCode && !params.browserName &&
+  if (params.duration && !params.startTime && !params.endTime && 
+      !params.room && !params.sessionId && !params.guestUser && 
+      !params.continentCode && !params.countryCode && !params.browserName && 
       !params.ispName && !params.route) {
     const cached = await getCachedWebVitalsP75(params.duration, params.deviceType);
     if (cached) {
@@ -671,14 +671,12 @@ export async function getCountryRoomMetrics(params: FilterParams): Promise<Count
 
   const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
   const mustClauses = [timeRangeQuery];
-
+  
   if (params.countryCode) {
     mustClauses.push({ term: { 'geoip.countryCode.keyword': params.countryCode } });
   }
 
-  console.log('mustClauses', JSON.stringify(mustClauses));
-
-  const [tipsResponse, watchTimeResponse] = await Promise.all([
+  const [tipsResponse, watchTimeResponse, bufferingResponse] = await Promise.all([
     // Get top rooms by tip events
     client.search({
       index: INDEX_PATTERN,
@@ -747,6 +745,47 @@ export async function getCountryRoomMetrics(params: FilterParams): Promise<Count
           }
         }
       }
+    }),
+    // Get top rooms by buffering time
+    client.search({
+      index: INDEX_PATTERN,
+      body: {
+        size: 0,
+        query: {
+          bool: {
+            must: [
+              ...mustClauses,
+              { term: { event: 'player' } },
+              {
+                range: {
+                  payload_player_bufferingTime: {
+                    gte: 0,
+                    lt: 40000
+                  }
+                }
+              }
+            ]
+          }
+        },
+        aggs: {
+          top_rooms: {
+            terms: {
+              field: 'room.keyword',
+              size: 10,
+              order: {
+                buffering_time: 'desc'
+              }
+            },
+            aggs: {
+              buffering_time: {
+                sum: {
+                  field: 'payload_player_bufferingTime'
+                }
+              }
+            }
+          }
+        }
+      }
     })
   ]);
 
@@ -758,6 +797,10 @@ export async function getCountryRoomMetrics(params: FilterParams): Promise<Count
     topWatchTimeRooms: watchTimeResponse.body.aggregations.top_rooms.buckets.map((bucket: any) => ({
       room: bucket.key,
       watchTime: bucket.watch_time.value
+    })),
+    topBufferingRooms: bufferingResponse.body.aggregations.top_rooms.buckets.map((bucket: any) => ({
+      room: bucket.key,
+      bufferingTime: bucket.buffering_time.value
     }))
   };
 }

@@ -49,20 +49,23 @@ apiV4Router.all('/sessions/*', async (req, res) => {
   try {
     const response = await fetch(targetUrl, {
       method: req.method,
-      headers: {
-        host: new URL(baseUrl).host
-      },
       body: req.body && Object.keys(req.body).length > 0 ? JSON.stringify(req.body) : undefined
     });
 
     const data = await response.text();
-    res.status(response.status).set('content-type', response.headers.get('content-type')).send(data);
+    const responseContentType = response.headers.get('content-type');
+    
+    if (response.ok && responseContentType) {
+      res.status(response.status).set('content-type', responseContentType).send(data);
+    } else {
+      res.status(response.status).send(data);
+    }
   } catch (error) {
     console.error('Proxy request error:', error);
-    const errorMessage = process.env.NODE_ENV === 'production'
+    const errorMessage = process.env.NODE_ENV === 'production' 
       ? 'An internal server error occurred'
       : 'Failed to connect to session service';
-
+    
     res.status(502).json({
       success: false,
       error: errorMessage
@@ -608,7 +611,7 @@ apiV4Router.get('/agg/users', async (req, res) => {
 apiV4Router.get('/agg/activity', async (req, res) => {
   try {
     const {
-      startTime,
+      startTime, 
       endTime,
       room,
       sessionId,
@@ -703,7 +706,7 @@ apiV4Router.get('/agg/events', async (req, res) => {
   }
 });
 
-apiV4Router.get('/agg/country/rooms', async (req, res) => {
+apiV4Router.get('/agg/rooms', async (req, res) => {
   try {
     const {
       duration,
