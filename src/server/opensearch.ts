@@ -298,9 +298,9 @@ export async function getWebVitalsMetrics(params: FilterParams): Promise<WebVita
 
 export async function getWebVitalsP75Metrics(params: FilterParams): Promise<WebVitalsP75Metrics> {
   // If using duration parameter and no other filters except deviceType, check cache
-  if (params.duration && !params.startTime && !params.endTime && 
-      !params.room && !params.sessionId && !params.guestUser && 
-      !params.continentCode && !params.countryCode && !params.browserName && 
+  if (params.duration && !params.startTime && !params.endTime &&
+      !params.room && !params.sessionId && !params.guestUser &&
+      !params.continentCode && !params.countryCode && !params.browserName &&
       !params.ispName && !params.route) {
     const cached = await getCachedWebVitalsP75(params.duration, params.deviceType);
     if (cached) {
@@ -643,6 +643,7 @@ export async function getEventCount(params: FilterParams): Promise<EventCountRes
     index: INDEX_PATTERN,
     body: {
       size: 0,
+      track_total_hits: true,
       query: {
         bool: {
           must: mustClauses
