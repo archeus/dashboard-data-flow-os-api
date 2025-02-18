@@ -52,17 +52,17 @@ apiV4Router.all('/sessions/*', async (req, res) => {
         ...req.headers,
         host: new URL(baseUrl).host
       },
-      body: req.body ? JSON.stringify(req.body) : undefined,
+      body: req.body && Object.keys(req.body).length > 0 ? JSON.stringify(req.body) : undefined
     });
 
     const data = await response.text();
     res.status(response.status).set(response.headers).send(data);
   } catch (error) {
     console.error('Proxy request error:', error);
-    const errorMessage = process.env.NODE_ENV === 'production' 
+    const errorMessage = process.env.NODE_ENV === 'production'
       ? 'An internal server error occurred'
       : 'Failed to connect to session service';
-    
+
     res.status(502).json({
       success: false,
       error: errorMessage
@@ -608,7 +608,7 @@ apiV4Router.get('/agg/users', async (req, res) => {
 apiV4Router.get('/agg/activity', async (req, res) => {
   try {
     const {
-      startTime, 
+      startTime,
       endTime,
       room,
       sessionId,
