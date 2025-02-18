@@ -17,7 +17,8 @@ import type {
   WebVitalMetricType,
   UserMetrics,
   ActivityMetrics,
-  EventCountResponse
+  EventCountResponse,
+  CountryRoomMetrics
 } from './types';
 import { getCachedWebVitalsP75 } from './cache/redis.ts'
 
@@ -643,7 +644,7 @@ export async function getEventCount(params: FilterParams): Promise<EventCountRes
     index: INDEX_PATTERN,
     body: {
       size: 0,
-      track_total_hits: true,
+     track_total_hits: true,
       query: {
         bool: {
           must: mustClauses
@@ -656,5 +657,107 @@ export async function getEventCount(params: FilterParams): Promise<EventCountRes
   return {
     count: response.body.hits.total.value,
     interval
+  };
+}
+
+export async function getCountryRoomMetrics(params: FilterParams): Promise<CountryRoomMetrics> {
+  let timeRange;
+  if (params.duration) {
+    timeRange = getTimeRangeFromDuration(params.duration);
+  } else {
+    timeRange = getTimeRange(params.startTime, params.endTime);
+  }
+  const { actualStartTime, actualEndTime } = timeRange;
+
+  const timeRangeQuery = buildTimeRangeQuery(actualStartTime.toISOString(), actualEndTime.toISOString());
+  const mustClauses = [timeRangeQuery];
+
+  if (params.countryCode) {
+    mustClauses.push({ term: { 'geoip.countryCode.keyword': params.countryCode } });
+  }
+
+  console.log('mustClauses', JSON.stringify(mustClauses));
+
+  const [tipsResponse, watchTimeResponse] = await Promise.all([
+    // Get top rooms by tip events
+    client.search({
+      index: INDEX_PATTERN,
+      body: {
+        size: 0,
+        query: {
+          bool: {
+            must: [
+              ...mustClauses,
+              {
+                terms: {
+                  event: ['payment:pt', 'payment:t']
+                }
+              }
+            ]
+          }
+        },
+        aggs: {
+          top_rooms: {
+            terms: {
+              field: 'room.keyword',
+              size: 10,
+              order: { _count: 'desc' }
+            }
+          }
+        }
+      }
+    }),
+    // Get top rooms by watch time
+    client.search({
+      index: INDEX_PATTERN,
+      body: {
+        size: 0,
+        query: {
+          bool: {
+            must: [
+              ...mustClauses,
+              { term: { event: 'player' } },
+              {
+                range: {
+                  payload_player_playtime: {
+                    gte: 0,
+                    lt: 40000
+                  }
+                }
+              }
+            ]
+          }
+        },
+        aggs: {
+          top_rooms: {
+            terms: {
+              field: 'room.keyword',
+              size: 10,
+              order: {
+                watch_time: 'desc'
+              }
+            },
+            aggs: {
+              watch_time: {
+                sum: {
+                  field: 'payload_player_playtime'
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+  ]);
+
+  return {
+    topTipRooms: tipsResponse.body.aggregations.top_rooms.buckets.map((bucket: any) => ({
+      room: bucket.key,
+      tipCount: bucket.doc_count
+    })),
+    topWatchTimeRooms: watchTimeResponse.body.aggregations.top_rooms.buckets.map((bucket: any) => ({
+      room: bucket.key,
+      watchTime: bucket.watch_time.value
+    }))
   };
 }

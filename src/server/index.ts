@@ -19,7 +19,8 @@ import {
   getDeviceTypeCount,
   getUserMetrics,
   getActivityMetrics,
-  getEventCount
+  getEventCount,
+  getCountryRoomMetrics
 } from './opensearch'
 import { client } from './opensearch';
 
@@ -41,7 +42,7 @@ const apiV4Router = express.Router();
 
 // Session proxy endpoint
 apiV4Router.all('/sessions/*', async (req, res) => {
-  const baseUrl = process.env.SESSION_AGG_URL || 'http://dashboard-data-flow-os-agg:300';
+  const baseUrl = process.env.SESSION_AGG_URL || 'http://dashboard-data-flow-os-agg:3000';
   const targetPath = req.url.replace('/sessions', '/api/sessions');
   const targetUrl = new URL(targetPath, baseUrl).toString();
 
@@ -698,6 +699,42 @@ apiV4Router.get('/agg/events', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch event counts'
+    });
+  }
+});
+
+apiV4Router.get('/agg/country/rooms', async (req, res) => {
+  try {
+    const {
+      duration,
+      startTime,
+      endTime,
+      countryCode
+    } = req.query;
+
+    if (duration && !['15min', '1h', '1d', '2d', '3d'].includes(duration as string)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid duration. Supported values: 15min, 1h, 1d, 2d, 3d'
+      });
+    }
+
+    const metrics = await getCountryRoomMetrics({
+      duration: duration as string,
+      startTime: startTime as string,
+      endTime: endTime as string,
+      countryCode: countryCode as string
+    });
+
+    res.json({
+      success: true,
+      data: metrics
+    });
+  } catch (error) {
+    console.error('Error fetching country room metrics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch country room metrics'
     });
   }
 });

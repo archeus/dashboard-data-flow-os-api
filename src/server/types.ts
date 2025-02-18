@@ -121,3 +121,14 @@ export interface EventCountResponse {
   count: number;
   interval?: string;
 }
+
+export interface CountryRoomMetrics {
+  topTipRooms: Array<{
+    room: string;
+    tipCount: number;
+  }>;
+  topWatchTimeRooms: Array<{
+    room: string;
+    watchTime: number;
+  }>;
+}
